@@ -1,0 +1,333 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MENTOR
+  ASSISTANT
+  STUDENT
+}
+
+enum CourseLevel {
+  BEGINNER
+  PRE_INTERMEDIATE
+  UPPER_INTERMEDIATE
+  ADVANCED
+}
+
+enum PaidVia {
+  PAYME
+  CLICK
+  CASH
+}
+
+enum HomeworkSubStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ExamAnswer {
+  variantA
+  variantB
+  variantC
+  variantD
+}
+
+model Users {
+  id               String               @id @default(uuid())
+  phone            String               @unique
+  password         String 
+  role             UserRole             @default(STUDENT)
+  fullName         String
+  image            String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  mentorProfile    MentorProfile?
+  mentorCourses    Course[]             @relation("MentorCourses")
+  assignedCourses  AssignedCourse[]
+  purchasedCourses PurchasedCourse[]
+  ratings          Rating[]
+  lastActivity     LastActivity?
+  lessonViews      LessonView[]
+  homeworkSubs     HomeworkSubmission[]
+  questions        Question[]
+  questionAnswers  QuestionAnswer[]
+  examResults      ExamResult[]
+
+  @@map("users")
+}
+
+model MentorProfile {
+  id         String   @id @default(uuid())
+  about      String?
+  job        String?
+  experience Int
+  telegram   String?
+  instagram  String?
+  linkedin   String?
+  facebook   String?
+  github     String?
+  website    String?
+  userId     String   @unique
+  user       Users    @relation(fields: [userId], references: [id])
+
+  @@map("mentorprofiles")
+}
+
+model CourseCategory {
+  id        String   @id @default(uuid())
+  name      String @unique
+  createdAt DateTime @default(now())
+
+  courses   Course[]
+
+  @@map("coursecategory")
+}
+
+model Course {
+  id               String           @id @default(uuid())
+  name             String
+  about            String
+  price            Decimal
+  banner           String
+  introVideo       String?
+  level            CourseLevel 
+  published        Boolean          @default(false)
+  cursecategoryId  String
+  mentorId         String
+  updatedAt        DateTime?
+  createdAt        DateTime         @default(now())
+  Cursecategory     CourseCategory   @relation(fields: [cursecategoryId], references: [id], onDelete: Cascade)
+  mentor           Users            @relation("MentorCourses", fields: [mentorId], references: [id], onDelete: Cascade)
+  assignedCourses  AssignedCourse[]
+  purchasedCourses PurchasedCourse[]
+  ratings          Rating[]
+  questions        Question[]
+  lessonBolimlar   LessonBolim[]
+  lessons          Lesson[]
+  lastActivities  LastActivity[]
+
+@@map("courses")
+
+}
+
+model AssignedCourse {
+  id String @id @default(uuid())
+  userId    String 
+  courseId  String
+  createdAt DateTime @default(now())
+
+  user   Users  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade) 
+
+@@map("assigncourses")
+}
+
+model PurchasedCourse {
+  id String @id @default(uuid())
+  courseId    String  
+  userId      String
+  amount      Decimal?
+  paidVia     PaidVia
+  purchasedAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   Users  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+
+  @@map("purchasedcourses")
+}
+
+model Rating {
+  id        String   @id @default(uuid())
+  rate      Int
+  comment   String
+  courseId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   Users  @relation(fields: [userId], references: [id])
+
+  @@map("rating")
+}
+
+model LastActivity {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  courseId   String?
+  groupId    String?
+  lessonId   String?
+  url        String?
+  updatedAt  DateTime @default(now())
+
+  user       Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course     Course?      @relation(fields: [courseId], references: [id])
+  Bolim      LessonBolim? @relation(fields: [groupId], references: [id])
+  lesson     Lesson?      @relation(fields: [lessonId], references: [id])
+
+  @@map("lastactivity")
+}
+
+model LessonBolim {
+  id           String        @id @default(uuid())
+  name         String
+  courseId     String
+  createdAt    DateTime      @default(now())
+
+  course       Course         @relation(fields: [courseId], references: [id])
+  lessons      Lesson[]
+  activities   LastActivity[]
+  exams        Exam[]
+  examResults  ExamResult[]
+  @@map("lessonbolim")
+}
+
+model Lesson {
+  id             String           @id @default(uuid())
+  name           String
+  about          String
+  video          String
+  courseId       String
+  bolimId        String
+  updatedAt      DateTime?
+  createdAt      DateTime         @default(now())
+
+  Bolim          LessonBolim      @relation(fields: [bolimId], references: [id])
+  course         Course           @relation(fields: [courseId], references: [id])
+  lessonFiles    LessonFile[]
+  homework       Homework?
+  views          LessonView[]
+  lastActivities LastActivity[]
+
+  @@map("lessons")
+}
+
+model LessonView {
+  id String @id @default(uuid())
+  lessonId String
+  userId   String
+  view     Boolean
+
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user     Users  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+
+  @@map("lessonview")
+}
+
+model LessonFile {
+  id        String   @id @default(uuid())
+  file      String
+  note      String?
+  lessonId  String
+  createdAt DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("lessonfiles")
+}
+
+model Homework {
+  id          String   @id @default(uuid())
+  task        String
+  file        String?
+  lessonId    String   @unique
+  updatedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  lesson      Lesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  submissions HomeworkSubmission[]
+
+  @@map("homeworks")
+}
+
+model HomeworkSubmission {
+  id         String            @id @default(uuid())
+  text       String?
+  file       String
+  reason     String?
+  status     HomeworkSubStatus @default(PENDING)
+  homeworkId String
+  userId     String
+  updatedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  homework Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user     Users    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("homeworksubmissions")
+}
+
+model Exam {
+  id            String     @id @default(uuid())
+  question      String
+  variantA      String
+  variantB      String
+  variantC      String
+  variantD      String
+  answer        ExamAnswer
+  lessonBolimId String
+  createdAt     DateTime   @default(now())
+
+  Bolim LessonBolim @relation(fields: [lessonBolimId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("exams")
+}
+
+model ExamResult {
+  id            String     @id @default(uuid())
+  lessonBolimId String
+  userId        String
+  passed        Boolean
+  corrects      Int
+  wrongs        Int
+  createdAt     DateTime   @default(now())
+
+  Bolim LessonBolim @relation(fields: [lessonBolimId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user  Users       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("examresults")
+}
+
+model Question {
+  id        String   @id @default(uuid())
+  userId    String
+  courseId  String
+  text      String
+  file      String?
+  read      Boolean   @default(false)
+  readAt    DateTime?
+  updatedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user      Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  answer    QuestionAnswer?
+
+  @@map("questions")
+}
+
+model QuestionAnswer {
+  id         String   @id @default(uuid())
+  questionId String   @unique
+  userId     String
+  text       String
+  file       String?
+  updatedAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user       Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("questionsanswer")
+}
+
