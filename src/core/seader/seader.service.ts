@@ -17,20 +17,20 @@ export class SeaderService implements OnModuleInit {
     }
 
     async CreateSuperadmin() {
-      let password = await bcrypt.hash("12345678",10)
+      let password = await bcrypt.hash("123456788",10)
         await this.prisma.users.createMany({
           data: [
             {
-              fullName: 'Ali Valiyev',
+              fullName: 'Muhammadyahyo',
               password,
-              phone: '+998900000000',
+              phone: '+998883730331',
               role: UserRole.STUDENT,
               image: 'default.png',
             },
             {
-              fullName: 'Faxriddin Asqaraliyev',
+              fullName: 'Muhammadyahyo',
               password,
-              phone: '+998903641207',
+              phone: '+998883730331',
               role: UserRole.ADMIN,
               image: 'default.png',
             },
@@ -39,6 +39,6 @@ export class SeaderService implements OnModuleInit {
           skipDuplicates: true,
         });
        
-        this.loger.log("Admin va User yaratildi.")
+        this.loger.log("Admin tayyor")
       }
 }
